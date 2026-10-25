@@ -113,3 +113,4 @@ Consequently, predictions should be treated as experimental estimates based on t
 ## Author
 
 Developed as a machine learning portfolio project to explore data preprocessing, regression modelling, model evaluation, and web application deployment.
+By Rajeev Menaria
