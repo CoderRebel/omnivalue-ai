@@ -1,0 +1,568 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniValue.AI | Used Device Price Predictor</title>
+    <meta name="description" content="Estimate used-device prices using machine learning.">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #080b12;
+            --border: rgba(148, 163, 184, 0.15);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(ellipse at 15% 0%, rgba(76, 94, 210, .15), transparent 40%),
+                radial-gradient(ellipse at 90% 40%, rgba(14, 165, 233, .07), transparent 35%),
+                var(--bg);
+            color: #e5e7eb;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        h1, h2, h3, .brand {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .panel {
+            background: rgba(16, 22, 34, .88);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 16px 55px rgba(0, 0, 0, .15);
+        }
+
+        .field-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .field {
+            width: 100%;
+            min-height: 45px;
+            border: 1px solid rgba(148, 163, 184, .22);
+            border-radius: 10px;
+            background: #0b101b;
+            color: #f1f5f9;
+            padding: 10px 12px;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+
+        .field:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, .13);
+        }
+
+        .field::placeholder { color: #64748b; }
+        select.field { cursor: pointer; }
+
+        .primary-btn {
+            background: linear-gradient(110deg, #818cf8, #6366f1);
+            color: white;
+            transition: transform .2s, opacity .2s;
+        }
+
+        .primary-btn:hover:not(:disabled) { transform: translateY(-1px); }
+        .primary-btn:disabled { opacity: .6; cursor: wait; }
+
+        .result-glow {
+            background:
+                radial-gradient(ellipse at 50% 0%, rgba(99, 102, 241, .15), transparent 70%),
+                #0c1220;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #64748b;
+        }
+
+        .status-dot.online { background: #34d399; }
+        .status-dot.offline { background: #fb7185; }
+
+        .metric {
+            background: rgba(148, 163, 184, .045);
+            border: 1px solid rgba(148, 163, 184, .12);
+            border-radius: 12px;
+        }
+
+        .section-kicker {
+            color: #a5b4fc;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 640px) {
+            .panel { border-radius: 16px; }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="sticky top-0 z-20 border-b border-white/10 bg-[#080b12]/90 backdrop-blur-xl">
+        <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+            <a href="/" class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-400/30">
+                    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M12 3 14.5 9.5 21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="brand text-lg font-bold tracking-tight text-white">OmniValue<span class="text-indigo-300">.AI</span></div>
+                    <div class="text-xs text-slate-500">Used device price intelligence</div>
+                </div>
+            </a>
+
+            <div class="flex items-center gap-2 rounded-full border border-white/10 bg-white/[.03] px-3 py-2 text-xs text-slate-300">
+                <span id="statusDot" class="status-dot"></span>
+                <span id="statusText">Checking API...</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+        <section class="mb-9 max-w-3xl">
+            <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-400/[.07] px-3 py-1.5 text-xs font-semibold text-indigo-200">
+                <span>✦</span>
+                MACHINE LEARNING · REGRESSION
+            </div>
+
+            <h1 class="text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl">
+                What is your device
+                <span class="text-indigo-300">worth today?</span>
+            </h1>
+
+            <p class="mt-4 max-w-2xl text-base leading-7 text-slate-400 sm:text-lg">
+                Enter your device specifications and usage history to get an estimated used-device price in Indian rupees.
+            </p>
+        </section>
+
+        <div class="grid items-start gap-6 lg:grid-cols-[1.45fr_0.85fr]">
+            <section class="panel p-5 sm:p-7">
+                <div class="mb-7 flex items-start justify-between gap-4">
+                    <div>
+                        <div class="section-kicker mb-2">Device configuration</div>
+                        <h2 class="text-xl font-bold text-white sm:text-2xl">Tell us about your device</h2>
+                        <p class="mt-2 text-sm text-slate-400">Enter the specifications as accurately as possible.</p>
+                    </div>
+                    <div class="hidden rounded-xl border border-white/10 bg-white/[.03] p-3 sm:block">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="1.6">
+                            <rect x="5" y="2" width="14" height="20" rx="2"/>
+                            <path d="M9 5h6M10 18h4"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <form id="predictionForm">
+                    <div class="mb-7">
+                        <h3 class="mb-4 text-sm font-semibold text-slate-200">01 / Device identity</h3>
+
+                        <div class="grid gap-5 sm:grid-cols-2">
+                            <div>
+                                <label class="field-label" for="device_brand">Brand</label>
+                                <select id="device_brand" name="device_brand" class="field" required>
+                                    <option value="Apple">Apple</option>
+                                    <option value="Samsung">Samsung</option>
+                                    <option value="Xiaomi">Xiaomi</option>
+                                    <option value="Huawei">Huawei</option>
+                                    <option value="Honor">Honor</option>
+                                    <option value="OnePlus">OnePlus</option>
+                                    <option value="Oppo">Oppo</option>
+                                    <option value="Vivo">Vivo</option>
+                                    <option value="Realme">Realme</option>
+                                    <option value="Google">Google</option>
+                                    <option value="Motorola">Motorola</option>
+                                    <option value="Nokia">Nokia</option>
+                                    <option value="Sony">Sony</option>
+                                    <option value="LG">LG</option>
+                                    <option value="Lenovo">Lenovo</option>
+                                    <option value="Asus">Asus</option>
+                                    <option value="HTC">HTC</option>
+                                    <option value="ZTE">ZTE</option>
+                                    <option value="Meizu">Meizu</option>
+                                    <option value="Gionee">Gionee</option>
+                                    <option value="Alcatel">Alcatel</option>
+                                    <option value="Micromax">Micromax</option>
+                                    <option value="Acer">Acer</option>
+                                    <option value="Others">Others</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="field-label" for="os">Operating system</label>
+                                <select id="os" name="os" class="field" required>
+                                    <option value="Android">Android</option>
+                                    <option value="iOS">iOS</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="field-label" for="screen_size">Screen size (cm)</label>
+                                <input class="field" id="screen_size" name="screen_size" type="number" min="1" max="100" step="0.01" value="15.5" required>
+                            </div>
+
+                            <div>
+                                <label class="field-label" for="release_year">Release year</label>
+                                <input class="field" id="release_year" name="release_year" type="number" min="2000" max="2026" step="1" value="2020" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-7 border-t border-white/[.08] pt-6">
+                        <h3 class="mb-4 text-sm font-semibold text-slate-200">02 / Hardware specifications</h3>
+
+                        <div class="grid gap-5 sm:grid-cols-2">
+                            <div>
+                                <label class="field-label" for="ram">RAM (GB)</label>
+                                <input class="field" id="ram" name="ram" type="number" min="0.1" max="128" step="0.1" value="4" required>
+                            </div>
+
+                            <div>
+                                <label class="field-label" for="internal_memory">Internal storage (GB)</label>
+                                <input class="field" id="internal_memory" name="internal_memory" type="number" min="0.1" max="4096" step="0.1" value="64" required>
+                            </div>
+
+                            <div>
+                                <label class="field-label" for="rear_camera_mp">Rear camera (MP)</label>
+                                <input class="field" id="rear_camera_mp" name="rear_camera_mp" type="number" min="0" max="500" step="0.1" value="12" required>
+                            </div>
+
+                            <div>
+                                <label class="field-label" for="front_camera_mp">Front camera (MP)</label>
+                                <input class="field" id="front_camera_mp" name="front_camera_mp" type="number" min="0" max="200" step="0.1" value="8" required>
+                            </div>
+
+                            <div>
+                                <label class="field-label" for="battery">Battery capacity (mAh)</label>
+                                <input class="field" id="battery" name="battery" type="number" min="0" max="30000" step="1" value="4000" required>
+                            </div>
+
+                            <div>
+                                <label class="field-label" for="weight">Weight (grams)</label>
+                                <input class="field" id="weight" name="weight" type="number" min="1" max="5000" step="0.1" value="180" required>
+                            </div>
+
+                            <div>
+                                <label class="field-label" for="four_g">4G connectivity</label>
+                                <select id="four_g" name="four_g" class="field" required>
+                                    <option value="yes">Yes</option>
+                                    <option value="no">No</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="field-label" for="five_g">5G connectivity</label>
+                                <select id="five_g" name="five_g" class="field" required>
+                                    <option value="no">No</option>
+                                    <option value="yes">Yes</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-white/[.08] pt-6">
+                        <h3 class="mb-4 text-sm font-semibold text-slate-200">03 / Usage history</h3>
+
+                        <div class="grid gap-5 sm:grid-cols-2">
+                            <div>
+                                <label class="field-label" for="days_used">Days used</label>
+                                <input class="field" id="days_used" name="days_used" type="number" min="0" max="10000" step="1" value="365" required>
+                                <p class="mt-2 text-xs text-slate-500">Total time the device has been used.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="formError" class="mt-5 hidden rounded-xl border border-rose-400/20 bg-rose-400/[.06] p-3 text-sm text-rose-300" role="alert"></div>
+
+                    <button id="predictButton" type="submit" class="primary-btn mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 py-3 font-semibold">
+                        <svg id="buttonIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 3 14.5 9.5 21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z"/>
+                        </svg>
+                        <span id="buttonText">Estimate used price</span>
+                    </button>
+
+                    <p class="mt-3 text-center text-xs text-slate-500">
+                        Predictions are generated by your locally hosted ML backend.
+                    </p>
+                </form>
+            </section>
+
+            <aside class="space-y-5">
+                <section class="panel result-glow overflow-hidden p-5 sm:p-7">
+                    <div class="mb-6 flex items-center justify-between gap-3">
+                        <div>
+                            <div class="section-kicker mb-2">Prediction result</div>
+                            <h2 class="text-xl font-bold text-white">Estimated value</h2>
+                        </div>
+                        <div class="flex h-11 w-11 items-center justify-center rounded-xl border border-indigo-300/20 bg-indigo-400/10 text-indigo-200">
+                            <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                <rect x="3" y="6" width="18" height="13" rx="2"/>
+                                <path d="M7 10h.01M17 15h.01M3 10h18M7 3h10"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div id="resultPlaceholder" class="py-7 text-center">
+                        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/[.03] text-slate-500">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                        </div>
+                        <p class="font-medium text-slate-300">Your estimate will appear here</p>
+                        <p class="mt-2 text-sm leading-6 text-slate-500">Complete the device details and select Estimate used price.</p>
+                    </div>
+
+                    <div id="resultContent" class="hidden">
+                        <p class="mb-2 text-sm text-slate-400">Predicted used-device price</p>
+                        <div id="priceValue" class="break-words text-4xl font-bold tracking-tight text-white sm:text-5xl">₹0</div>
+
+                        <div class="mt-5 flex items-center gap-2 rounded-lg border border-indigo-300/15 bg-indigo-300/[.05] px-3 py-2 text-xs text-indigo-200">
+                            <span>✦</span>
+                            <span>Machine learning estimate</span>
+                        </div>
+
+                        <div class="mt-5 grid grid-cols-2 gap-3">
+                            <div class="metric p-3">
+                                <div class="mb-1 text-xs text-slate-500">Brand</div>
+                                <div id="resultBrand" class="truncate text-sm font-semibold text-slate-200">—</div>
+                            </div>
+                            <div class="metric p-3">
+                                <div class="mb-1 text-xs text-slate-500">Days used</div>
+                                <div id="resultDays" class="text-sm font-semibold text-slate-200">—</div>
+                            </div>
+                        </div>
+
+                        <button id="resetButton" type="button" class="mt-5 w-full rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/[.04]">
+                            Reset estimate
+                        </button>
+                    </div>
+                </section>
+
+                <section class="panel p-5 sm:p-6">
+                    <div class="mb-4 flex items-center gap-3">
+                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-400/10 text-sky-300">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                <circle cx="12" cy="12" r="9"/>
+                                <path d="M12 11v5M12 8h.01"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-semibold text-white">How it works</h3>
+                    </div>
+
+                    <div class="space-y-4 text-sm leading-6 text-slate-400">
+                        <div class="flex gap-3">
+                            <span class="font-bold text-indigo-300">01</span>
+                            <p>Enter the device specifications and usage history.</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <span class="font-bold text-indigo-300">02</span>
+                            <p>Your Flask API processes the inputs using the saved preprocessing and regression pipeline.</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <span class="font-bold text-indigo-300">03</span>
+                            <p>The model returns a predicted price in INR based on its training labels.</p>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+        </div>
+
+        <footer class="mt-10 border-t border-white/[.08] py-6 text-center text-xs leading-6 text-slate-500">
+            <p class="brand text-sm font-semibold text-slate-400">OmniValue.AI</p>
+            <p class="mt-1">Used device price prediction · Machine learning project</p>
+            <p class="mt-2">Estimates depend on the quality and coverage of the training dataset.</p>
+        </footer>
+    </main>
+
+    <script>
+        const form = document.getElementById("predictionForm");
+        const predictButton = document.getElementById("predictButton");
+        const buttonText = document.getElementById("buttonText");
+        const buttonIcon = document.getElementById("buttonIcon");
+        const formError = document.getElementById("formError");
+
+        const resultPlaceholder = document.getElementById("resultPlaceholder");
+        const resultContent = document.getElementById("resultContent");
+        const priceValue = document.getElementById("priceValue");
+        const resultBrand = document.getElementById("resultBrand");
+        const resultDays = document.getElementById("resultDays");
+
+        const statusDot = document.getElementById("statusDot");
+        const statusText = document.getElementById("statusText");
+
+        const inrFormatter = new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            maximumFractionDigits: 0
+        });
+
+        function setApiStatus(online) {
+            statusDot.classList.toggle("online", online);
+            statusDot.classList.toggle("offline", !online);
+            statusText.textContent = online ? "API reachable" : "API unavailable";
+        }
+
+        async function checkApi() {
+            try {
+                const response = await fetch("/", { method: "GET" });
+                setApiStatus(response.ok);
+            } catch {
+                setApiStatus(false);
+            }
+        }
+
+        function showError(message) {
+            formError.textContent = message;
+            formError.classList.remove("hidden");
+        }
+
+        function clearError() {
+            formError.textContent = "";
+            formError.classList.add("hidden");
+        }
+
+        function setLoading(loading) {
+            predictButton.disabled = loading;
+            buttonText.textContent = loading ? "Calculating estimate..." : "Estimate used price";
+
+            buttonIcon.innerHTML = loading
+                ? '<path d="M12 3a9 9 0 1 0 9 9"/>'
+                : '<path d="M12 3 14.5 9.5 21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z"/>';
+
+            buttonIcon.style.animation = loading ? "spin 1s linear infinite" : "none";
+        }
+
+        const numericFields = [
+            "screen_size",
+            "rear_camera_mp",
+            "front_camera_mp",
+            "internal_memory",
+            "ram",
+            "battery",
+            "weight",
+            "release_year",
+            "days_used"
+        ];
+
+        function getFormPayload() {
+            const payload = Object.fromEntries(new FormData(form).entries());
+
+            for (const field of numericFields) {
+                payload[field] = Number(payload[field]);
+
+                if (!Number.isFinite(payload[field])) {
+                    throw new Error(`Please enter a valid value for ${field.replaceAll("_", " ")}.`);
+                }
+            }
+
+            if (payload.days_used < 0) {
+                throw new Error("Days used cannot be negative.");
+            }
+
+            if (payload.release_year < 2000 || payload.release_year > 2026) {
+                throw new Error("Please enter a valid release year between 2000 and 2026.");
+            }
+
+            return payload;
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            clearError();
+
+            let payload;
+
+            try {
+                payload = getFormPayload();
+            } catch (error) {
+                showError(error.message);
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                const response = await fetch("/predict", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "The prediction request failed.");
+                }
+
+                const prediction = Number(data.predicted_used_price_inr);
+
+                if (!Number.isFinite(prediction)) {
+                    throw new Error(
+                        "The API response did not contain a valid predicted_used_price_inr value. Check app.py and restart Flask."
+                    );
+                }
+
+                priceValue.textContent = inrFormatter.format(prediction);
+                resultBrand.textContent = payload.device_brand;
+                resultDays.textContent = `${payload.days_used.toLocaleString("en-IN")} days`;
+
+                resultPlaceholder.classList.add("hidden");
+                resultContent.classList.remove("hidden");
+
+                setApiStatus(true);
+            } catch (error) {
+                setApiStatus(false);
+                showError(
+                    error.message ||
+                    "Could not connect to the prediction API. Ensure Flask is running and try again."
+                );
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        document.getElementById("resetButton").addEventListener("click", () => {
+            form.reset();
+            clearError();
+
+            resultContent.classList.add("hidden");
+            resultPlaceholder.classList.remove("hidden");
+
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+
+        const animationStyle = document.createElement("style");
+        animationStyle.textContent = `
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(animationStyle);
+
+        checkApi();
+    </script>
+</body>
+</html>
